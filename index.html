@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
   <title>Roblox Avatar Viewer</title>
@@ -7,42 +7,32 @@
     body {
       background: #0d0d0d;
       color: white;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
+      font-family: Arial;
+      text-align: center;
+      margin-top: 80px;
     }
-
     input {
       padding: 10px;
-      font-size: 16px;
-      width: 220px;
-      margin-bottom: 10px;
       background: #111;
       color: white;
       border: 1px solid #333;
     }
-
     button {
-      padding: 10px 16px;
-      font-size: 16px;
-      cursor: pointer;
+      padding: 10px;
+      margin-left: 5px;
       background: #1a1a1a;
       color: white;
       border: 1px solid #444;
+      cursor: pointer;
     }
-
     img {
       margin-top: 20px;
       width: 300px;
       height: 300px;
     }
-
     .error {
-      margin-top: 10px;
       color: #ff4d4d;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -51,15 +41,13 @@
   <h2>Roblox Avatar Viewer</h2>
 
   <input id="username" placeholder="Roblox username">
-  <button onclick="getAvatar()">Get Avatar</button>
+  <button onclick="loadAvatar()">Get Avatar</button>
 
+  <div class="error" id="error"></div>
   <img id="avatar">
-  <div id="error" class="error"></div>
 
   <script>
-    const CORS = "https://corsproxy.io/?";
-
-    async function getAvatar() {
+    async function loadAvatar() {
       const username = document.getElementById("username").value.trim();
       const avatar = document.getElementById("avatar");
       const error = document.getElementById("error");
@@ -73,39 +61,17 @@
       }
 
       try {
-        // Username -> UserId (via CORS proxy)
-        const userRes = await fetch(
-          CORS + "https://users.roblox.com/v1/usernames/users",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              usernames: [username],
-              excludeBannedUsers: false
-            })
-          }
-        );
+        const res = await fetch(`/api/roblox?username=${encodeURIComponent(username)}`);
+        const data = await res.json();
 
-        const userData = await userRes.json();
-
-        if (!userData.data || userData.data.length === 0) {
-          error.textContent = "User not found.";
+        if (data.error) {
+          error.textContent = data.error;
           return;
         }
 
-        const userId = userData.data[0].id;
-
-        // Get avatar thumbnail
-        const thumbRes = await fetch(
-          `https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=420x420&format=Png&isCircular=false`
-        );
-
-        const thumbData = await thumbRes.json();
-        avatar.src = thumbData.data[0].imageUrl;
-
-      } catch (err) {
-        error.textContent = "Something went wrong.";
-        console.error(err);
+        avatar.src = data.avatar;
+      } catch {
+        error.textContent = "Failed to load avatar.";
       }
     }
   </script>
